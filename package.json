@@ -1,0 +1,62 @@
+{
+  "name": "jslitedb",
+  "version": "1.0.0",
+  "description": "Lightweight JSON-based database for JavaScript-based apps with real-time sync, REST API, and zero configuration.",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit --verbose",
+    "test:integration": "jest tests/integration --verbose",
+    "test:performance": "jest tests/integration/performance.test.js --verbose",
+    "test:api": "jest tests/integration/rest-api.test.js --verbose",
+    "test:ci": "jest --ci --coverage --watchAll=false",
+    "test:core": "jest tests/unit/jslitedb-core.test.js --verbose",
+    "test:collection": "jest tests/unit/collection.test.js --verbose",
+    "test:queryresult": "jest tests/unit/queryresult.test.js --verbose",
+    "test:utilities": "jest tests/unit/utilities.test.js --verbose"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.js"],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.d.ts",
+      "!**/node_modules/**"
+    ],
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"],
+    "testTimeout": 30000,
+    "maxWorkers": "50%"
+  },
+  "keywords": [
+    "database",
+    "json",
+    "key-value",
+    "javascript",
+    "typescript",
+    "nodejs",
+    "lightweight",
+    "realtime",
+    "rest-api",
+    "websocket"
+  ],
+  "author": "Rogerio Taques",
+  "contributors": [
+    "Omer (sehawqdb)"
+  ],
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4"
+  }
+}

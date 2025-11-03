@@ -1,0 +1,20 @@
+{
+  "name": "jslitedb-benchmark",
+  "version": "1.0.0",
+  "description": "Comprehensive benchmark suite for JSLiteDB",
+  "main": "benchmark.js",
+  "scripts": {
+    "benchmark": "node benchmark.js",
+    "report": "node generate-report.js",
+    "install-deps": "npm install mongodb better-sqlite3",
+    "bench-full": "npm run install-deps && npm run report"
+  },
+  "dependencies": {
+    "cli-progress": "^3.12.0",
+    "colors": "^1.4.0"
+  },
+  "devDependencies": {},
+  "keywords": ["benchmark", "database", "performance", "mongodb", "sqlite", "jslitedb"],
+  "author": "",
+  "license": "MIT"
+}
