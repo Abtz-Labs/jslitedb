@@ -90,16 +90,16 @@ export declare class Collection {
 
   constructor(db: any, name: string);
 
-  insert(document: any): Promise<any>;
-  insert(id: string | number, document: any): Promise<any>;
+  insert(document: any): Promise<any & { id: string }>;
+  insert(id: string | number, document: any): Promise<any & { id: string }>;
   update(id: string | number, document: any): Promise<any>;
   findById(id: string | number): Promise<any | null>;
   find(options?: {
     filter?: (document: any, id: string) => boolean;
     limit?: number;
     skip?: number;
-  }): Promise<any[]>;
-  findOne(filter: (document: any, id: string) => boolean): Promise<any | null>;
+  }): Promise<Array<any & { id: string }>>;
+  findOne(filter: (document: any, id: string) => boolean): Promise<(any & { id: string }) | null>;
   delete(id: string | number): Promise<boolean>;
   count(options?: ((document: any, id: string) => boolean) | { filter?: (document: any, id: string) => boolean }): Promise<number>;
   stream(): AsyncGenerator<any, void, unknown>;

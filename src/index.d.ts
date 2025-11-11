@@ -8,8 +8,8 @@ import { IndexSystem, Logger, Validator, WriteMutex, Collection, QueryResult } f
  * Configuration options for JSLiteDB
  */
 export interface JSLiteDBOptions {
-  /** File path for storage (default: "jslitedb.json") */
-  path?: string;
+  /** Folder path for storage (each collection gets its own JSON file) (default: "./data") */
+  folderPath?: string;
   /** Autosave interval in milliseconds (0 disables autosave) */
   autoSaveInterval?: number;
   /** Enable REST API server */
@@ -90,7 +90,9 @@ export interface HealthResponse {
   status: string;
   uptime: number;
   realtime: boolean;
-  dataSize: number;
+  collections: number;
+  totalDocuments: number;
+  folderPath: string;
   memoryUsage: {
     rss: string;
     heapUsed: string;
@@ -124,12 +126,11 @@ export interface WebSocketEvents {
  * JSLiteDB events
  */
 export interface JSLiteDBEvents {
-  'set': (event: { key: string; value: any; oldValue?: any }) => void;
-  'delete': (event: { key: string; oldValue: any }) => void;
-  'clear': () => void;
-  'push': (event: { key: string; value: any }) => void;
-  'pull': (event: { key: string; value: any }) => void;
-  'add': (event: { key: string; number: number; oldValue: number; newValue: number }) => void;
+  'collection:insert': (event: { collection: string; id: string; document: any }) => void;
+  'collection:update': (event: { collection: string; id: string; document: any }) => void;
+  'collection:delete': (event: { collection: string; id: string; document: any }) => void;
+  'collection:dropped': (event: { collection: string }) => void;
+  'database:cleared': () => void;
   'backup': (event: { backupPath: string }) => void;
   'restore': (event: { backupPath: string }) => void;
   'server:started': (event: { port: number }) => void;
@@ -142,11 +143,14 @@ export interface JSLiteDBEvents {
  * Main JSLiteDB class
  */
 export declare class JSLiteDB extends EventEmitter {
-  public readonly filePath: string;
+  public readonly folderPath: string;
   public readonly autoSaveInterval: number;
   public readonly enableIndexing: boolean;
   public readonly lazyLoading: boolean;
   public readonly maxMemoryItems: number;
+  public readonly enableLogging: boolean;
+  public readonly enableWriteQueue: boolean;
+  public readonly queueFlushInterval: number;
   public readonly enableServer: boolean;
   public readonly serverPort: number;
   public readonly enableRealtime: boolean;
@@ -225,7 +229,7 @@ export declare class JSLiteDB extends EventEmitter {
   /**
    * Stop the REST API server
    */
-  stopServer(): void;
+  stopServer(): Promise<void>;
 
   // Backup & restore
   /**
