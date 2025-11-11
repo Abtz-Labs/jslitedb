@@ -1,8 +1,14 @@
 {
   "name": "jslitedb",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Lightweight JSON-based database for JavaScript-based apps with real-time sync, REST API, and zero configuration.",
   "main": "src/index.js",
+  "license": "AGPL-3.0",
+  "author": "Rogerio Taques",
+  "repository": "github:Abtz-Labs/jslitedb",
+  "bugs": {
+    "url": "https://github.com/Abtz-Labs/jslitedb/issues"
+  },
   "scripts": {
     "test": "jest",
     "test:watch": "jest --watch",
@@ -16,6 +22,16 @@
     "test:collection": "jest tests/unit/collection.test.js --verbose",
     "test:queryresult": "jest tests/unit/queryresult.test.js --verbose",
     "test:utilities": "jest tests/unit/utilities.test.js --verbose"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "jest": "^30.2.0",
+    "supertest": "^7.1.4",
+    "typescript": "^5.9.3"
   },
   "jest": {
     "testEnvironment": "node",
@@ -39,6 +55,9 @@
     "testTimeout": 30000,
     "maxWorkers": "50%"
   },
+  "contributors": [
+    "Omer (sehawqdb)"
+  ],
   "keywords": [
     "database",
     "json",
@@ -50,20 +69,5 @@
     "realtime",
     "rest-api",
     "websocket"
-  ],
-  "author": "Rogerio Taques",
-  "contributors": [
-    "Omer (sehawqdb)"
-  ],
-  "license": "AGPL-3.0",
-  "dependencies": {
-    "cors": "^2.8.5",
-    "express": "^5.1.0",
-    "socket.io": "^4.8.1"
-  },
-  "devDependencies": {
-    "jest": "^30.2.0",
-    "supertest": "^7.1.4",
-    "typescript": "^5.9.3"
-  }
+  ]
 }
