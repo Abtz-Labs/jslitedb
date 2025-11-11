@@ -1,0 +1,12 @@
+_benchmark/
+tests/
+
+*data/
+*temp/
+
+.github/
+.vscode/
+.env
+
+BENCHMARK.md
+package-lock.json
