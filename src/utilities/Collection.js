@@ -25,9 +25,18 @@ class Collection {
 
       // Handle different parameter combinations
       if (document === undefined) {
-        // insert(document) - auto-generate ID
+        // insert(document) - check if document has an id property
         doc = documentOrId;
-        id = this.db._generateId();
+
+        // If document has an 'id' property, use it; otherwise auto-generate
+        if (doc && typeof doc === 'object' && 'id' in doc) {
+          id = doc.id;
+          // Remove id from document data to avoid duplication
+          const { id: _, ...docWithoutId } = doc;
+          doc = docWithoutId;
+        } else {
+          id = this.db._generateId();
+        }
       } else {
         // insert(id, document) - use provided ID
         id = documentOrId;
@@ -110,8 +119,11 @@ class Collection {
       return this.db.cache.get(cacheKey);
     }
 
-    const collectionData = this.db.collectionData.get(this.name);
-    if (!collectionData) return null;
+    // Get or load collection data
+    let collectionData = this.db.collectionData.get(this.name);
+    if (!collectionData) {
+      collectionData = await this.db._loadCollection(this.name);
+    }
 
     const document = collectionData.get(String(id));
     if (!document) return null;
@@ -132,9 +144,14 @@ class Collection {
     await this.db._ensureInitialized();
 
     const { limit, skip = 0, filter } = options;
-    const collectionData = this.db.collectionData.get(this.name);
 
-    if (!collectionData) return [];
+    // Get or load collection data
+    let collectionData = this.db.collectionData.get(this.name);
+    if (!collectionData) {
+      collectionData = await this.db._loadCollection(this.name);
+    }
+
+    if (!collectionData || collectionData.size === 0) return [];
 
     const results = [];
     let skipped = 0;
@@ -178,7 +195,12 @@ class Collection {
     await this.db._ensureInitialized();
 
     return await this.db.writeMutex.acquire(async () => {
-      const collectionData = this.db.collectionData.get(this.name);
+      // Get or load collection data
+      let collectionData = this.db.collectionData.get(this.name);
+      if (!collectionData) {
+        collectionData = await this.db._loadCollection(this.name);
+      }
+
       if (!collectionData || !collectionData.has(String(id))) {
         return false;
       }
@@ -226,7 +248,12 @@ class Collection {
   async count(options) {
     await this.db._ensureInitialized();
 
-    const collectionData = this.db.collectionData.get(this.name);
+    // Get or load collection data
+    let collectionData = this.db.collectionData.get(this.name);
+    if (!collectionData) {
+      collectionData = await this.db._loadCollection(this.name);
+    }
+
     if (!collectionData) return 0;
 
     // Handle both direct filter function and options objec
@@ -258,7 +285,12 @@ class Collection {
   async *stream() {
     await this.db._ensureInitialized();
 
-    const collectionData = this.db.collectionData.get(this.name);
+    // Get or load collection data
+    let collectionData = this.db.collectionData.get(this.name);
+    if (!collectionData) {
+      collectionData = await this.db._loadCollection(this.name);
+    }
+
     if (!collectionData) return;
 
     for (const [id, document] of collectionData) {
