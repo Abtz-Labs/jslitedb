@@ -5,7 +5,10 @@
   "main": "src/index.js",
   "license": "AGPL-3.0",
   "author": "Rogerio Taques",
-  "repository": "github:Abtz-Labs/jslitedb",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Abtz-Labs/jslitedb.git"
+  },
   "bugs": {
     "url": "https://github.com/Abtz-Labs/jslitedb/issues"
   },
