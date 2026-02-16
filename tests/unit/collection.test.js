@@ -354,4 +354,217 @@ describe('Collection Class', () => {
       });
     });
   });
+
+  describe('Bug Fixes: Document ID Handling', () => {
+    test('should extract id from document object when insert({ id, ...data })', async () => {
+      // This tests the fix for the reported bug where findById returned null
+      const doc = { id: 'custom-key', name: 'Test User', value: 100 };
+      const result = await collection.insert(doc);
+
+      // Should return document with id
+      expect(result.id).toBe('custom-key');
+      expect(result.name).toBe('Test User');
+
+      // findById should work with the extracted id
+      const found = await collection.findById('custom-key');
+      expect(found).toBeDefined();
+      expect(found).not.toBeNull();
+      expect(found.name).toBe('Test User');
+      expect(found.value).toBe(100);
+    });
+
+    test('should handle findById after insert with id in document', async () => {
+      await collection.insert({ id: 'key1', value: 'test' });
+
+      const found = await collection.findById('key1');
+      expect(found).not.toBeNull();
+      expect(found.value).toBe('test');
+
+      // find() should also work
+      const all = await collection.find();
+      const foundInFind = all.find(d => d.id === 'key1');
+      expect(foundInFind).toBeDefined();
+      expect(foundInFind.value).toBe('test');
+    });
+
+    test('should update document instead of creating duplicate', async () => {
+      // Insert initial document
+      await collection.insert({ id: 'key1', value: 'old' });
+
+      const beforeUpdate = await collection.find();
+      expect(beforeUpdate).toHaveLength(1);
+      expect(beforeUpdate[0].value).toBe('old');
+
+      // Update the document
+      await collection.update('key1', { value: 'new' });
+
+      // Should still have only one document
+      const afterUpdate = await collection.find();
+      expect(afterUpdate).toHaveLength(1);
+      expect(afterUpdate[0].id).toBe('key1');
+      expect(afterUpdate[0].value).toBe('new');
+    });
+
+    test('should delete document correctly', async () => {
+      await collection.insert({ id: 'key1', value: 'test' });
+
+      const beforeDelete = await collection.find();
+      expect(beforeDelete).toHaveLength(1);
+
+      const deleted = await collection.delete('key1');
+      expect(deleted).toBe(true);
+
+      const afterDelete = await collection.find();
+      expect(afterDelete).toHaveLength(0);
+
+      const foundById = await collection.findById('key1');
+      expect(foundById).toBeNull();
+    });
+
+    test('should handle multiple operations with id in document', async () => {
+      // Insert
+      await collection.insert({ id: 'user1', name: 'Alice', age: 30 });
+      await collection.insert({ id: 'user2', name: 'Bob', age: 25 });
+
+      // Find all
+      let all = await collection.find();
+      expect(all).toHaveLength(2);
+
+      // Find by ID
+      const alice = await collection.findById('user1');
+      expect(alice).toBeDefined();
+      expect(alice.name).toBe('Alice');
+
+      // Update
+      await collection.update('user1', { name: 'Alice Updated', age: 31 });
+      const updated = await collection.findById('user1');
+      expect(updated.name).toBe('Alice Updated');
+      expect(updated.age).toBe(31);
+
+      // Should not create duplicates
+      all = await collection.find();
+      expect(all).toHaveLength(2);
+
+      // Delete
+      await collection.delete('user2');
+      all = await collection.find();
+      expect(all).toHaveLength(1);
+      expect(all[0].id).toBe('user1');
+    });
+
+    test('should handle persistence with id in document', async () => {
+      // Insert documents
+      await collection.insert({ id: 'persist1', value: 'data1' });
+      await collection.insert({ id: 'persist2', value: 'data2' });
+
+      await db.save();
+      await db.close();
+
+      // Reopen database
+      const db2 = new JSLiteDB({
+        folderPath: tempDir,
+        autoSaveInterval: 0,
+        enableLogging: false
+      });
+      await db2._ensureInitialized();
+      const col2 = db2.collection('testCollection');
+
+      // findById should work after restart
+      const found1 = await col2.findById('persist1');
+      expect(found1).not.toBeNull();
+      expect(found1.value).toBe('data1');
+
+      const found2 = await col2.findById('persist2');
+      expect(found2).not.toBeNull();
+      expect(found2.value).toBe('data2');
+
+      // Update should not create duplicates after restart
+      const countBefore = await col2.count();
+      await col2.update('persist1', { value: 'updated' });
+      const countAfter = await col2.count();
+      expect(countAfter).toBe(countBefore);
+
+      // Delete should work after restart
+      await col2.delete('persist2');
+      const countAfterDelete = await col2.count();
+      expect(countAfterDelete).toBe(countAfter - 1);
+
+      await db2.close();
+      db = new JSLiteDB({
+        folderPath: tempDir,
+        autoSaveInterval: 0,
+        enableLogging: false
+      });
+      await db._ensureInitialized();
+      collection = db.collection('testCollection');
+    });
+
+    test('should not allow duplicate ids when using id in document', async () => {
+      await collection.insert({ id: 'duplicate', value: 'first' });
+
+      await expect(
+        collection.insert({ id: 'duplicate', value: 'second' })
+      ).rejects.toThrow();
+    });
+  });
+
+  describe('Lazy Loading Support', () => {
+    test('should load collection on demand in findById', async () => {
+      // Insert document
+      await collection.insert('lazy-1', { name: 'Lazy Test' });
+      await db.save();
+
+      // Clear in-memory data
+      db.collectionData.delete('testCollection');
+
+      // findById should load the collection
+      const found = await collection.findById('lazy-1');
+      expect(found).not.toBeNull();
+      expect(found.name).toBe('Lazy Test');
+    });
+
+    test('should load collection on demand in find', async () => {
+      // Insert documents
+      await collection.insert('lazy-1', { name: 'Doc 1' });
+      await collection.insert('lazy-2', { name: 'Doc 2' });
+      await db.save();
+
+      // Clear in-memory data
+      db.collectionData.delete('testCollection');
+
+      // find should load the collection
+      const all = await collection.find();
+      expect(all).toHaveLength(2);
+    });
+
+    test('should load collection on demand in delete', async () => {
+      // Insert document
+      await collection.insert('lazy-1', { name: 'To Delete' });
+      await db.save();
+
+      // Clear in-memory data
+      db.collectionData.delete('testCollection');
+
+      // delete should load the collection
+      const deleted = await collection.delete('lazy-1');
+      expect(deleted).toBe(true);
+
+      const found = await collection.findById('lazy-1');
+      expect(found).toBeNull();
+    });
+
+    test('should load collection on demand in count', async () => {
+      // Insert documents
+      await collection.insert('lazy-1', { name: 'Doc 1' });
+      await collection.insert('lazy-2', { name: 'Doc 2' });
+      await db.save();
+
+      // Clear in-memory data
+      db.collectionData.delete('testCollection');
+
+      // count should load the collection
+      const count = await collection.count();
+      expect(count).toBe(2);
+    });
+  });
 });
