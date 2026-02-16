@@ -1,6 +1,6 @@
 {
   "name": "jslitedb",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "Lightweight JSON-based database for JavaScript-based apps with real-time sync, REST API, and zero configuration.",
   "main": "src/index.js",
   "license": "AGPL-3.0",
