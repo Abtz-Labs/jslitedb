@@ -386,20 +386,25 @@ class JSLiteDB extends EventEmitter {
 
           this.collectionFiles.set(collectionName, filePath);
 
-          try {
-            const content = await fs.readFile(filePath, 'utf8');
-            const collectionData = JSON.parse(content);
+          // If lazy loading is disabled, load all collections immediately
+          if (!this.lazyLoading) {
+            try {
+              const content = await fs.readFile(filePath, 'utf8');
+              const collectionData = JSON.parse(content);
 
-            const dataMap = new Map();
-            for (const [id, document] of Object.entries(collectionData)) {
-              dataMap.set(id, document);
+              const dataMap = new Map();
+              for (const [id, document] of Object.entries(collectionData)) {
+                dataMap.set(id, document);
+              }
+
+              this.collectionData.set(collectionName, dataMap);
+
+              this.logger.info(`Loaded collection '${collectionName}' with ${dataMap.size} documents`);
+            } catch (error) {
+              this.logger.warn(`Failed to load collection file ${file}: ${error.message}`);
             }
-
-            this.collectionData.set(collectionName, dataMap);
-
-            this.logger.info(`Loaded collection '${collectionName}' with ${dataMap.size} documents`);
-          } catch (error) {
-            this.logger.warn(`Failed to load collection file ${file}: ${error.message}`);
+          } else {
+            this.logger.info(`Registered collection '${collectionName}' for lazy loading`);
           }
         }
       }
@@ -428,21 +433,25 @@ class JSLiteDB extends EventEmitter {
       const filePath = this._getCollectionFilePath(collectionName);
       this.collectionFiles.set(collectionName, filePath);
 
-      try {
-        const collectionContent = await fs.readFile(filePath, 'utf8');
-        const collectionData = JSON.parse(collectionContent);
+      // If lazy loading is disabled, load all collections immediately
+      if (!this.lazyLoading) {
+        try {
+          const collectionContent = await fs.readFile(filePath, 'utf8');
+          const collectionData = JSON.parse(collectionContent);
 
-        const dataMap = new Map();
-        for (const [id, document] of Object.entries(collectionData)) {
-          dataMap.set(id, document);
+          const dataMap = new Map();
+          for (const [id, document] of Object.entries(collectionData)) {
+            dataMap.set(id, document);
+          }
+
+          this.collectionData.set(collectionName, dataMap);
+        } catch (error) {
+          this.logger.warn(`Failed to load collection ${collectionName}: ${error.message}`);
+          // Remove from index if file doesn't exist
+          this.collectionFiles.delete(collectionName);
         }
-
-        this.collectionData.set(collectionName, dataMap);
-      } catch (error) {
-        this.logger.warn(`Failed to load collection ${collectionName}: ${error.message}`);
-        // Remove from index if file doesn't exis
-        this.collectionFiles.delete(collectionName);
       }
+      // With lazy loading enabled, collections will be loaded on-demand
     }
   }
 
